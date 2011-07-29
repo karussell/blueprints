@@ -9,7 +9,7 @@ import java.io.*;
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class GraphMLWriterTest extends TestCase {
-    public void testNormal() throws Exception {
+    public void testNormalized() throws Exception {
         TinkerGraph g = new TinkerGraph();
         GraphMLReader.inputGraph(g, GraphMLReader.class.getResourceAsStream("graph-example-1.xml"));
 
@@ -19,6 +19,21 @@ public class GraphMLWriterTest extends TestCase {
         w.outputGraph(bos);
 
         String expected = streamToString(GraphMLWriterTest.class.getResourceAsStream("graph-example-1-normalized.xml"));
+        //System.out.println(expected);
+        assertEquals(expected, bos.toString());
+    }
+
+    public void testNormalizedWithIdProperty() throws Exception {
+        TinkerGraph g = new TinkerGraph();
+        GraphMLReader.inputGraph(g, GraphMLReader.class.getResourceAsStream("graph-example-1.xml"));
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        GraphMLWriter w = new GraphMLWriter(g);
+        w.setNormalize(true);
+        w.setIdProperty("name");
+        w.outputGraph(bos);
+
+        String expected = streamToString(GraphMLWriterTest.class.getResourceAsStream("graph-example-1-names-as-ids.xml"));
         //System.out.println(expected);
         assertEquals(expected, bos.toString());
     }

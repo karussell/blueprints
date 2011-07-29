@@ -10,7 +10,13 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * GraphMLWriter writes a Graph to a GraphML OutputStream.
@@ -23,6 +29,8 @@ public class GraphMLWriter {
     private boolean normalize = false;
     private Map<String, String> vertexKeyTypes = null;
     private Map<String, String> edgeKeyTypes = null;
+
+    private String idProperty = null;
 
     /**
      * @param graph the Graph to pull the data from
@@ -39,6 +47,17 @@ public class GraphMLWriter {
      */
     public void setNormalize(final boolean normalize) {
         this.normalize = normalize;
+    }
+
+    /**
+     * @param p a property to used in place of an element's ID in the GraphML output.
+     *          In combination with the "normalize" parameter,
+     *          this is useful for avoiding ID collisions when merging version-controlled graphs.
+     *          If non-null, this property should be present for every element in the graph,
+     *          and its values should be unique among vertices and unique among edges.
+     */
+    public void setIdProperty(final String p) {
+        idProperty = p;
     }
 
     /**
@@ -111,6 +130,7 @@ public class GraphMLWriter {
         } else {
             keyset = vertexKeyTypes.keySet();
         }
+
         for (String key : keyset) {
             writer.writeStartElement(GraphMLTokens.KEY);
             writer.writeAttribute(GraphMLTokens.ID, key);
@@ -127,6 +147,7 @@ public class GraphMLWriter {
         } else {
             keyset = edgeKeyTypes.keySet();
         }
+
         for (String key : keyset) {
             writer.writeStartElement(GraphMLTokens.KEY);
             writer.writeAttribute(GraphMLTokens.ID, key);
@@ -152,7 +173,8 @@ public class GraphMLWriter {
         }
         for (Vertex vertex : vertices) {
             writer.writeStartElement(GraphMLTokens.NODE);
-            writer.writeAttribute(GraphMLTokens.ID, vertex.getId().toString());
+            writer.writeAttribute(GraphMLTokens.ID, getId(vertex));
+
             Collection<String> keys;
             if (normalize) {
                 keys = new LinkedList<String>();
@@ -161,6 +183,7 @@ public class GraphMLWriter {
             } else {
                 keys = vertex.getPropertyKeys();
             }
+
             for (String key : keys) {
                 writer.writeStartElement(GraphMLTokens.DATA);
                 writer.writeAttribute(GraphMLTokens.KEY, key);
@@ -183,9 +206,9 @@ public class GraphMLWriter {
 
             for (Edge edge : edges) {
                 writer.writeStartElement(GraphMLTokens.EDGE);
-                writer.writeAttribute(GraphMLTokens.ID, edge.getId().toString());
-                writer.writeAttribute(GraphMLTokens.SOURCE, edge.getOutVertex().getId().toString());
-                writer.writeAttribute(GraphMLTokens.TARGET, edge.getInVertex().getId().toString());
+                writer.writeAttribute(GraphMLTokens.ID, getId(edge));
+                writer.writeAttribute(GraphMLTokens.SOURCE, getId(edge.getOutVertex()));
+                writer.writeAttribute(GraphMLTokens.TARGET, getId(edge.getInVertex()));
                 writer.writeAttribute(GraphMLTokens.LABEL, edge.getLabel());
 
                 List<String> keys = new LinkedList<String>();
@@ -277,13 +300,29 @@ public class GraphMLWriter {
             return GraphMLTokens.STRING;
     }
 
+    private String getId(final Element el) {
+        Object id;
+
+        if (null == idProperty) {
+            id = el.getId();
+        } else {
+            id = el.getProperty(idProperty);
+
+            if (null == id) {
+                id = el.getId();
+            }
+        }
+
+        return id.toString();
+    }
+
     // Note: elements are sorted in lexicographical, not in numerical, order of IDs.
-    private static class ElementComparator implements Comparator<Element> {
+    private class ElementComparator implements Comparator<Element> {
 
         @Override
         public int compare(final Element a,
                            final Element b) {
-            return a.getId().toString().compareTo(b.getId().toString());
+            return getId(a).compareTo(getId(b));
         }
     }
 }
