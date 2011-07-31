@@ -108,7 +108,7 @@ public class GraphMLReader {
     public static void inputGraph(final Graph graph, final InputStream graphMLInputStream, int bufferSize, String vertexIdKey, String edgeIdKey, String edgeLabelKey) throws XMLStreamException {
 
         XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-        XMLStreamReader reader = inputFactory.createXMLStreamReader(graphMLInputStream);
+        XMLStreamReader reader = inputFactory.createXMLStreamReader(graphMLInputStream, "UTF-8");
 
         Map<String, String> keyIdMap = new HashMap<String, String>();
         Map<String, String> keyTypesMaps = new HashMap<String, String>();

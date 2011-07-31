@@ -10,6 +10,9 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -81,6 +84,12 @@ public class GraphMLWriter {
      * @throws XMLStreamException thrown if there is an error generating the GraphML data
      */
     public void outputGraph(final OutputStream graphMLOutputStream) throws XMLStreamException {
+        /*PrintStream p;
+        try {
+            p = new PrintStream(graphMLOutputStream, false, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }*/
         if (null == this.vertexKeyTypes || null == this.edgeKeyTypes) {
             Map<String, String> vertexKeyTypes = new HashMap<String, String>();
             Map<String, String> edgeKeyTypes = new HashMap<String, String>();
@@ -110,13 +119,20 @@ public class GraphMLWriter {
         }
 
         XMLOutputFactory inputFactory = XMLOutputFactory.newInstance();
-        XMLStreamWriter writer = inputFactory.createXMLStreamWriter(graphMLOutputStream, "UTF8");
+        Writer w;
+        try {
+            w = new OutputStreamWriter(graphMLOutputStream, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        XMLStreamWriter writer = inputFactory.createXMLStreamWriter(w);
         if (normalize) {
             writer = new GraphMLWriterHelper.IndentingXMLStreamWriter(writer);
             ((GraphMLWriterHelper.IndentingXMLStreamWriter) writer).setIndentStep("    ");
         }
 
-        writer.writeStartDocument();
+        //writer.writeStartDocument();
+        writer.writeStartDocument("UTF-8", "1.0");
         writer.writeStartElement(GraphMLTokens.GRAPHML);
         writer.writeAttribute(GraphMLTokens.XMLNS, GraphMLTokens.GRAPHML_XMLNS);
 
