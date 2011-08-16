@@ -4,11 +4,13 @@ import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.tg.TinkerGraph;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +26,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectEdgeNoPropertiesNoKeysNoTypes() {
+    public void createJSONObjectEdgeNoPropertiesNoKeysNoTypes() throws JSONException{
         Vertex v1 = this.graph.addVertex(1);
         Vertex v2 = this.graph.addVertex(2);
 
@@ -46,7 +48,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexNoPropertiesNoKeysNoTypes() {
+    public void createJSONObjectVertexNoPropertiesNoKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
 
         JSONObject json = JSONWriter.createJSONElement(v);
@@ -59,12 +61,13 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexPrimitivePropertiesNoKeysNoTypes() {
+    public void createJSONObjectVertexPrimitivePropertiesNoKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         v.setProperty("keyString", "string");
         v.setProperty("keyLong", 1L);
         v.setProperty("keyInt", 2);
         v.setProperty("keyFloat", 3.3f);
+        v.setProperty("keyExponentialDouble", 1312928167.626012);
         v.setProperty("keyDouble", 4.4);
         v.setProperty("keyBoolean", true);
 
@@ -81,6 +84,8 @@ public class JSONWriterTest {
         Assert.assertEquals(2, json.optInt("keyInt"));
         Assert.assertTrue(json.has("keyFloat"));
         Assert.assertEquals(3.3f, (float) json.optDouble("keyFloat"), 0);
+        Assert.assertTrue(json.has("keyExponentialDouble"));
+        Assert.assertEquals(1312928167.626012, json.optDouble("keyExponentialDouble"), 0);
         Assert.assertTrue(json.has("keyDouble"));
         Assert.assertEquals(4.4, json.optDouble("keyDouble"), 0);
         Assert.assertTrue(json.has("keyBoolean"));
@@ -88,7 +93,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexMapPropertyNoKeysNoTypes() {
+    public void createJSONObjectVertexMapPropertyNoKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         Map map = new HashMap();
         map.put("this", "some");
@@ -112,7 +117,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexListPropertyNoKeysNoTypes() {
+    public void createJSONObjectVertexListPropertyNoKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         List<String> list = new ArrayList<String>();
         list.add("this");
@@ -134,7 +139,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexStringArrayPropertyNoKeysNoTypes() {
+    public void createJSONObjectVertexStringArrayPropertyNoKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         String[] stringArray = new String[]{"this", "that", "other"};
 
@@ -153,7 +158,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexDoubleArrayPropertyNoKeysNoTypes() {
+    public void createJSONObjectVertexDoubleArrayPropertyNoKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         double[] doubleArray = new double[]{1.0, 2.0, 3.0};
 
@@ -172,7 +177,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexIntArrayPropertyNoKeysNoTypes() {
+    public void createJSONObjectVertexIntArrayPropertyNoKeysNoTypes()throws JSONException {
         Vertex v = this.graph.addVertex(1);
         int[] intArray = new int[]{1, 2, 3};
 
@@ -191,7 +196,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexLongArrayPropertyNoKeysNoTypes() {
+    public void createJSONObjectVertexLongArrayPropertyNoKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         long[] longArray = new long[]{1l, 2l, 3l};
 
@@ -210,7 +215,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectFloatArrayPropertyNoKeysNoTypes() {
+    public void createJSONObjectFloatArrayPropertyNoKeysNoTypes()throws JSONException {
         Vertex v = this.graph.addVertex(1);
         float[] floatArray = new float[]{1.0f, 2.0f, 3.0f};
 
@@ -229,7 +234,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectBooleanArrayPropertyNoKeysNoTypes() {
+    public void createJSONObjectBooleanArrayPropertyNoKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         boolean[] booleanArray = new boolean[]{true, false, true};
 
@@ -248,7 +253,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexCatPropertyNoKeysNoTypes() {
+    public void createJSONObjectVertexCatPropertyNoKeysNoTypes()throws JSONException {
         Vertex v = this.graph.addVertex(1);
         v.setProperty("mycat", new Cat("smithers"));
 
@@ -262,7 +267,23 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexCatArrayPropertyNoKeysNoTypes() {
+    public void createJSONObjectVertexCatPropertyNoKeysWithTypes() throws JSONException{
+        Vertex v = this.graph.addVertex(1);
+        v.setProperty("mycat", new Cat("smithers"));
+
+        JSONObject json = JSONWriter.createJSONElement(v, null, true);
+
+        Assert.assertNotNull(json);
+        Assert.assertTrue(json.has(JSONTokens._ID));
+        Assert.assertEquals(1, json.optInt(JSONTokens._ID));
+        Assert.assertTrue(json.has("mycat"));
+        JSONObject jsonObjectCat = json.optJSONObject("mycat");
+        Assert.assertTrue(jsonObjectCat.has("value"));
+        Assert.assertEquals("smithers", jsonObjectCat.optString("value"));
+    }
+
+    @Test
+    public void createJSONObjectVertexCatArrayPropertyNoKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         List<Cat> cats = new ArrayList<Cat>();
         cats.add(new Cat("smithers"));
@@ -283,7 +304,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectCrazyPropertyNoKeysNoTypes() {
+    public void createJSONObjectCrazyPropertyNoKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         List mix = new ArrayList();
         mix.add(new Cat("smithers"));
@@ -338,7 +359,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexNoPropertiesWithKeysNoTypes() {
+    public void createJSONObjectVertexNoPropertiesWithKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         v.setProperty("x", "X");
         v.setProperty("y", "Y");
@@ -359,7 +380,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexVertexPropertiesWithKeysNoTypes() {
+    public void createJSONObjectVertexVertexPropertiesWithKeysNoTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         v.setProperty("x", "X");
         v.setProperty("y", "Y");
@@ -396,7 +417,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexPrimitivePropertiesNoKeysWithTypes() {
+    public void createJSONObjectVertexPrimitivePropertiesNoKeysWithTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
         v.setProperty("keyString", "string");
         v.setProperty("keyLong", 1L);
@@ -456,7 +477,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexListPropertiesNoKeysWithTypes() {
+    public void createJSONObjectVertexListPropertiesNoKeysWithTypes()throws JSONException {
         Vertex v = this.graph.addVertex(1);
         List<String> list = new ArrayList<String>();
         list.add("this");
@@ -492,7 +513,7 @@ public class JSONWriterTest {
     }
 
     @Test
-    public void createJSONObjectVertexMapPropertiesNoKeysWithTypes() {
+    public void createJSONObjectVertexMapPropertiesNoKeysWithTypes() throws JSONException{
         Vertex v = this.graph.addVertex(1);
 
         Map map = new HashMap();

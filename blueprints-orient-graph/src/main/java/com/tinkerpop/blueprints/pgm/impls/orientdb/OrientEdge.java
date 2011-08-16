@@ -14,8 +14,8 @@ import java.util.Set;
  */
 public class OrientEdge extends OrientElement implements Edge {
 
-    public OrientEdge(final OrientGraph graph, final ODocument rawEdge) {
-        super(graph, rawEdge);
+    public OrientEdge(final OrientGraph rawGraph, final ODocument rawEdge) {
+        super(rawGraph, rawEdge);
     }
 
     public Vertex getOutVertex() {
@@ -30,6 +30,7 @@ public class OrientEdge extends OrientElement implements Edge {
         return (String) this.rawElement.field(LABEL);
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     protected void setLabel(final String label) {
         this.rawElement.field(LABEL, label);
         for (OrientAutomaticIndex autoIndex : this.graph.getAutoIndices()) {

@@ -7,7 +7,12 @@ import com.orientechnologies.orient.core.metadata.schema.OProperty;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.ORecord;
 import com.orientechnologies.orient.core.record.impl.ODocument;
-import com.tinkerpop.blueprints.pgm.*;
+import com.tinkerpop.blueprints.pgm.CloseableSequence;
+import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.pgm.Element;
+import com.tinkerpop.blueprints.pgm.Index;
+import com.tinkerpop.blueprints.pgm.TransactionalGraph;
+import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 import com.tinkerpop.blueprints.pgm.impls.WrappingCloseableSequence;
 import com.tinkerpop.blueprints.pgm.impls.orientdb.util.OrientElementSequence;
@@ -86,6 +91,7 @@ public class OrientIndex<T extends OrientElement> implements Index<T> {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public CloseableSequence<T> get(final String key, final Object value) {
         final String keyTemp = key + SEPARATOR + value;
         final Collection<OIdentifiable> records = underlying.get(keyTemp);
@@ -93,7 +99,7 @@ public class OrientIndex<T extends OrientElement> implements Index<T> {
         if (records.isEmpty())
             return new WrappingCloseableSequence(Collections.emptySet());
 
-        return new OrientElementSequence(graph, records.iterator());
+        return new OrientElementSequence<T>(graph, records.iterator());
     }
 
     public long count(final String key, final Object value) {
@@ -168,9 +174,6 @@ public class OrientIndex<T extends OrientElement> implements Index<T> {
                 throw new IllegalArgumentException("Index class '" + indexClassName
                         + "' is not registered. Supported ones: Vertex, Edge and custom class that extends them");
             }
-
-        // LOAD THE TREE-MAP
-        //underlying = new OIndexUser(graph.getRawGraph(), new OIndexNotUnique().loadFromConfiguration(indexConfiguration) );
     }
 
     public void close() {

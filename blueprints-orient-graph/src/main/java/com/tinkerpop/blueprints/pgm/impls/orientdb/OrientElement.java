@@ -18,11 +18,12 @@ public abstract class OrientElement implements Element {
     protected final OrientGraph graph;
     protected final ODocument rawElement;
 
-    protected OrientElement(final OrientGraph graph, final ODocument rawElement) {
-        this.graph = graph;
+    protected OrientElement(final OrientGraph rawGraph, final ODocument rawElement) {
+        this.graph = rawGraph;
         this.rawElement = rawElement;
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void setProperty(final String key, final Object value) {
         if (key.equals(StringFactory.ID) || (key.equals(StringFactory.LABEL) && this instanceof Edge))
             throw new RuntimeException(key + StringFactory.PROPERTY_EXCEPTION_MESSAGE);
@@ -50,6 +51,7 @@ public abstract class OrientElement implements Element {
         }
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public Object removeProperty(final String key) {
         final boolean txBegun = this.graph.autoStartTransaction();
 

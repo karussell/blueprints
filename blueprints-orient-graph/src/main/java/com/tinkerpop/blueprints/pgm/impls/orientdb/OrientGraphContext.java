@@ -14,8 +14,8 @@ import java.util.Map;
 public class OrientGraphContext {
     public Mode txMode = Mode.AUTOMATIC;
 
-    public Map<String, OrientIndex> manualIndices = new HashMap<String, OrientIndex>();
-    public Map<String, OrientAutomaticIndex> autoIndices = new HashMap<String, OrientAutomaticIndex>();
+    public Map<String, OrientIndex<? extends OrientElement>> manualIndices = new HashMap<String, OrientIndex<? extends OrientElement>>();
+    public Map<String, OrientAutomaticIndex<? extends OrientElement>> autoIndices = new HashMap<String, OrientAutomaticIndex<? extends OrientElement>>();
 
     public OGraphDatabase rawGraph;
 }

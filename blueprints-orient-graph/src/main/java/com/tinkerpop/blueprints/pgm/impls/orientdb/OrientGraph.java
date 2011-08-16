@@ -32,11 +32,15 @@ import java.util.Set;
 public class OrientGraph implements TransactionalGraph, IndexableGraph {
     private final static String ADMIN = "admin";
 
-    private final String url;
-    private final String username;
-    private final String password;
+    private String url;
+    private String username;
+    private String password;
 
-    private ThreadLocal<OrientGraphContext> threadContext = new ThreadLocal<OrientGraphContext>();
+    private final ThreadLocal<OrientGraphContext> threadContext = new ThreadLocal<OrientGraphContext>();
+
+    static {
+        //OGlobalConfiguration.STORAGE_KEEP_OPEN.setValue(false);
+    }
 
     public OrientGraph(final String url) {
         this(url, ADMIN, ADMIN);
@@ -49,37 +53,40 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
         this.openOrCreate(true);
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends Element> AutomaticIndex<T> createAutomaticIndex(final String indexName, final Class<T> indexClass, final Set<String> indexKeys) {
-        final OrientGraphContext context = getContext();
+        final OrientGraphContext context = getContext(true);
         if (context.autoIndices.containsKey(indexName))
             throw new RuntimeException("Index already exists: " + indexName);
 
-        final OrientAutomaticIndex index = new OrientAutomaticIndex<OrientElement>(this, indexName, (Class<OrientElement>) indexClass, indexKeys);
+        final OrientAutomaticIndex<? extends Element> index = new OrientAutomaticIndex<OrientElement>(this, indexName, (Class<OrientElement>) indexClass, indexKeys);
         context.autoIndices.put(index.getIndexName(), index);
 
         // SAVE THE CONFIGURATION INTO THE GLOBAL CONFIG
         saveIndexConfiguration();
 
-        return index;
+        return (AutomaticIndex<T>) index;
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends Element> Index<T> createManualIndex(final String indexName, final Class<T> indexClass) {
-        final OrientGraphContext context = getContext();
+        final OrientGraphContext context = getContext(true);
         if (context.manualIndices.containsKey(indexName))
             throw new RuntimeException("Index already exists: " + indexName);
 
-        final OrientIndex index = new OrientIndex(this, indexName, indexClass, Index.Type.MANUAL, null);
+        final OrientIndex<? extends OrientElement> index = new OrientIndex<OrientElement>(this, indexName, indexClass, Index.Type.MANUAL, null);
         context.manualIndices.put(index.getIndexName(), index);
 
         // SAVE THE CONFIGURATION INTO THE GLOBAL CONFIG
         saveIndexConfiguration();
 
-        return index;
+        return (Index<T>) index;
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends Element> Index<T> getIndex(final String indexName, final Class<T> indexClass) {
-        final OrientGraphContext context = getContext();
-        Index<?> index = context.manualIndices.get(indexName);
+        final OrientGraphContext context = getContext(true);
+        Index<? extends Element> index = context.manualIndices.get(indexName);
         if (null == index) {
             index = context.autoIndices.get(indexName);
             if (null == index)
@@ -93,7 +100,7 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
     }
 
     public Iterable<Index<? extends Element>> getIndices() {
-        final OrientGraphContext context = getContext();
+        final OrientGraphContext context = getContext(true);
         final List<Index<? extends Element>> list = new ArrayList<Index<? extends Element>>();
         for (Index<?> index : context.manualIndices.values()) {
             list.add(index);
@@ -104,16 +111,16 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
         return list;
     }
 
-    protected Iterable<OrientIndex> getManualIndices() {
-        return getContext().manualIndices.values();
+    protected Iterable<OrientIndex<? extends OrientElement>> getManualIndices() {
+        return getContext(true).manualIndices.values();
     }
 
-    protected Iterable<OrientAutomaticIndex> getAutoIndices() {
-        return getContext().autoIndices.values();
+    protected Iterable<OrientAutomaticIndex<? extends OrientElement>> getAutoIndices() {
+        return getContext(true).autoIndices.values();
     }
 
     public void dropIndex(final String iIndexName) {
-        final OrientGraphContext context = getContext();
+        final OrientGraphContext context = getContext(true);
         if (context.manualIndices.remove(iIndexName) == null)
             context.autoIndices.remove(iIndexName);
 
@@ -203,8 +210,9 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
         try {
             AutomaticIndexHelper.removeElement(this, vertex);
 
-            for (Index index : this.getManualIndices()) {
+            for (Index<? extends Element> index : this.getManualIndices()) {
                 if (Vertex.class.isAssignableFrom(index.getIndexClass())) {
+                    @SuppressWarnings("unchecked")
                     OrientIndex<OrientVertex> idx = (OrientIndex<OrientVertex>) index;
                     idx.removeElement(oVertex);
                 }
@@ -229,18 +237,18 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
         return getVertices(true);
     }
 
-    private Iterable<Vertex> getVertices(final boolean iPolymorphic) {
+    private Iterable<Vertex> getVertices(final boolean polymorphic) {
         final OGraphDatabase db = getRawGraph();
-        return new OrientElementSequence<Vertex>(this, new ORecordIteratorClass<ORecordInternal<?>>(db, (ODatabaseRecordAbstract) db.getUnderlying(), OGraphDatabase.VERTEX_CLASS_NAME, iPolymorphic));
+        return new OrientElementSequence<Vertex>(this, new ORecordIteratorClass<ORecordInternal<?>>(db, (ODatabaseRecordAbstract) db.getUnderlying(), OGraphDatabase.VERTEX_CLASS_NAME, polymorphic));
     }
 
     public Iterable<Edge> getEdges() {
         return getEdges(true);
     }
 
-    private Iterable<Edge> getEdges(final boolean iPolymorphic) {
+    private Iterable<Edge> getEdges(final boolean polymorphic) {
         final OGraphDatabase db = getRawGraph();
-        return new OrientElementSequence<Edge>(this, new ORecordIteratorClass<ORecordInternal<?>>(db, (ODatabaseRecordAbstract) db.getUnderlying(), OGraphDatabase.EDGE_CLASS_NAME, iPolymorphic));
+        return new OrientElementSequence<Edge>(this, new ORecordIteratorClass<ORecordInternal<?>>(db, (ODatabaseRecordAbstract) db.getUnderlying(), OGraphDatabase.EDGE_CLASS_NAME, polymorphic));
     }
 
     public Edge getEdge(final Object id) {
@@ -270,8 +278,9 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
         try {
             AutomaticIndexHelper.removeElement(this, edge);
 
-            for (Index index : this.getManualIndices()) {
+            for (Index<? extends Element> index : this.getManualIndices()) {
                 if (Edge.class.isAssignableFrom(index.getIndexClass())) {
+                    @SuppressWarnings("unchecked")
                     OrientIndex<OrientEdge> idx = (OrientIndex<OrientEdge>) index;
                     idx.removeElement(oEdge);
                 }
@@ -293,7 +302,7 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
     }
 
     public void clear() {
-        final OrientGraphContext context = getContext();
+        final OrientGraphContext context = getContext(true);
 
         for (Index<? extends Element> idx : getIndices()) {
             ((OrientIndex<?>) idx).close();
@@ -309,20 +318,11 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
     }
 
     public void shutdown() {
-        final OrientGraphContext context = getContext();
+        removeContext();
 
-        if (context != null) {
-            context.rawGraph.rollback();
-            context.rawGraph.close();
-
-            for (Index<? extends Element> idx : getIndices()) {
-                ((OrientIndex<?>) idx).close();
-            }
-            context.manualIndices.clear();
-            context.autoIndices.clear();
-
-            this.threadContext.set(null);
-        }
+        url = null;
+        username = null;
+        password = null;
     }
 
     public String toString() {
@@ -330,11 +330,11 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
     }
 
     public OGraphDatabase getRawGraph() {
-        return getContext().rawGraph;
+        return getContext(true).rawGraph;
     }
 
     public void startTransaction() {
-        final OrientGraphContext context = getContext();
+        final OrientGraphContext context = getContext(true);
 
         if (Mode.AUTOMATIC == context.txMode)
             throw new RuntimeException(TransactionalGraph.TURN_OFF_MESSAGE);
@@ -345,7 +345,7 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
     }
 
     public void stopTransaction(final Conclusion conclusion) {
-        if (Mode.AUTOMATIC == getContext().txMode)
+        if (Mode.AUTOMATIC == getContext(true).txMode)
             throw new RuntimeException(TransactionalGraph.TURN_OFF_MESSAGE);
 
         if (conclusion == Conclusion.FAILURE) {
@@ -356,14 +356,15 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
 
     public void setTransactionMode(final Mode mode) {
         getRawGraph().commit();
-        getContext().txMode = mode;
+        getContext(true).txMode = mode;
     }
 
     public Mode getTransactionMode() {
-        return getContext().txMode;
+        return getContext(true).txMode;
     }
 
     protected void saveIndexConfiguration() {
+        getRawGraph().getMetadata().getIndexManager().getConfiguration().save();
     }
 
     protected boolean autoStartTransaction() {
@@ -385,20 +386,23 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
         }
     }
 
-    protected OrientGraphContext getContext() {
+    protected OrientGraphContext getContext(final boolean iCreate) {
         OrientGraphContext context = threadContext.get();
 
-        if (context == null)
+        if (context == null && iCreate)
             context = openOrCreate(false);
 
         return context;
     }
 
     private OrientGraphContext openOrCreate(final boolean createDefaultIndices) {
+        if (url == null)
+            throw new IllegalStateException("Database is closed");
+
         synchronized (this) {
             OrientGraphContext context = threadContext.get();
             if (context != null)
-                shutdown();
+                removeContext();
 
             context = new OrientGraphContext();
             this.threadContext.set(context);
@@ -447,14 +451,14 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
                 index = new OrientIndex(this, rawIndex);
 
                 // REGISTER THE INDEX
-                getContext().manualIndices.put(index.getIndexName(), index);
+                getContext(true).manualIndices.put(index.getIndexName(), index);
                 break;
 
             case AUTOMATIC:
                 index = new OrientAutomaticIndex(this, rawIndex);
 
                 // REGISTER THE INDEX INTO THE AUTOMATIC INDEXES
-                getContext().autoIndices.put(index.getIndexName(), (OrientAutomaticIndex<?>) index);
+                getContext(true).autoIndices.put(index.getIndexName(), (OrientAutomaticIndex<?>) index);
                 break;
 
             default:
@@ -462,5 +466,22 @@ public class OrientGraph implements TransactionalGraph, IndexableGraph {
         }
 
         return index;
+    }
+
+    private void removeContext() {
+        final OrientGraphContext context = getContext(false);
+
+        if (context != null) {
+            context.rawGraph.rollback();
+            context.rawGraph.close();
+
+            for (Index<? extends Element> idx : getIndices()) {
+                ((OrientIndex<?>) idx).close();
+            }
+            context.manualIndices.clear();
+            context.autoIndices.clear();
+
+            this.threadContext.set(null);
+        }
     }
 }

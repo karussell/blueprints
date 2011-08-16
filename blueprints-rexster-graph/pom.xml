@@ -5,26 +5,24 @@
     <parent>
         <groupId>com.tinkerpop.blueprints</groupId>
         <artifactId>blueprints</artifactId>
-        <version>0.9-SNAPSHOT</version>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>blueprints-rexster-graph</artifactId>
-    <version>0.9-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Blueprints-RexsterGraph</name>
     <description>Blueprints property graph implementation for Rexster</description>
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
     <dependencies>
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-core</artifactId>
-            <version>0.9-SNAPSHOT</version>
+            <version>${blueprints.version}</version>
         </dependency>
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-test</artifactId>
-            <version>0.9-SNAPSHOT</version>
+            <version>${blueprints.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -76,7 +74,7 @@
                         </property>
                         <property>
                             <name>rexsterGraphURI</name>
-                            <value>http://localhost:8182/emptygraph</value>
+                            <value>http://127.0.0.1:8182/emptygraph</value>
                         </property>
                     </systemProperties>
                 </configuration>

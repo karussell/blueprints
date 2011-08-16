@@ -19,26 +19,28 @@ public class OrientElementSequence<T extends Element> implements CloseableSequen
     private final Iterator<?> underlying;
     private final OrientGraph graph;
 
-    public OrientElementSequence(final OrientGraph graph, final Iterator<?> iUnderlying) {
+    public OrientElementSequence(final OrientGraph graph, final Iterator<?> rawIterator) {
         this.graph = graph;
-        this.underlying = iUnderlying;
+        this.underlying = rawIterator;
     }
 
     public boolean hasNext() {
         return this.underlying.hasNext();
     }
 
+    @SuppressWarnings("unchecked")
     public T next() {
         OrientElement currentElement = null;
         Object current = this.underlying.next();
+
+        if (null == current)
+            throw new NoSuchElementException();
 
         if (current instanceof ORID)
             current = graph.getRawGraph().load((ORID) current);
 
         if (current instanceof ODocument) {
             final ODocument currentDocument = (ODocument) current;
-            if (null == currentDocument)
-                throw new NoSuchElementException();
 
             if (currentDocument.getInternalStatus() == ODocument.STATUS.NOT_LOADED)
                 currentDocument.load();

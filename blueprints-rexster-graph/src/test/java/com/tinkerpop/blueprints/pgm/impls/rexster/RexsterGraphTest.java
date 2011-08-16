@@ -1,6 +1,14 @@
 package com.tinkerpop.blueprints.pgm.impls.rexster;
 
-import com.tinkerpop.blueprints.pgm.*;
+import com.tinkerpop.blueprints.pgm.AutomaticIndexTestSuite;
+import com.tinkerpop.blueprints.pgm.EdgeTestSuite;
+import com.tinkerpop.blueprints.pgm.Graph;
+import com.tinkerpop.blueprints.pgm.GraphTestSuite;
+import com.tinkerpop.blueprints.pgm.IndexTestSuite;
+import com.tinkerpop.blueprints.pgm.IndexableGraph;
+import com.tinkerpop.blueprints.pgm.IndexableGraphTestSuite;
+import com.tinkerpop.blueprints.pgm.TestSuite;
+import com.tinkerpop.blueprints.pgm.VertexTestSuite;
 import com.tinkerpop.blueprints.pgm.impls.GraphTest;
 
 import java.lang.reflect.Method;
@@ -94,7 +102,7 @@ public class RexsterGraphTest extends GraphTest {
     private String getWorkingUri() {
         String uri = System.getProperty("rexsterGraphURI");
         if (uri == null) {
-            uri = "http://localhost:8182/emptygraph";
+            uri = "http://127.0.0.1:8182/emptygraph";
         }
         return uri;
     }
