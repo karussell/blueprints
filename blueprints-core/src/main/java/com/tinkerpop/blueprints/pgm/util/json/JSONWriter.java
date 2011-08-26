@@ -5,6 +5,7 @@ import com.tinkerpop.blueprints.pgm.Element;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.MappingJsonFactory;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
@@ -23,16 +24,28 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author Marko A. Rodriguez (http://markorodriguez.com)
+ * Helps write graph elements to TinkerPop JSON format.
+ *
+ * Contains methods to support both Jackson and Jettison for JSON processing.
  */
 public final class JSONWriter {
 
     private static JsonNodeFactory jsonNodeFactory = JsonNodeFactory.instance;
 
+    /**
+     * Creates a Jettison JSONObject from a graph element. All property keys are serialized and types are not shown.
+     * @param element The graph element to convert to JSON.
+     */
     public static JSONObject createJSONElement(final Element element) throws JSONException {
         return createJSONElement(element, null, false);
     }
 
+    /**
+     * Creates a Jettison JSONObject from a graph element.
+     * @param element the graph element to convert to JSON.
+     * @param propertyKeys The property keys at the root of the element to serialize.  If null, then all keys are serialized.
+     * @param showTypes Data types are written to the JSON explicitly if true.
+     */
     public static JSONObject createJSONElement(final Element element, final List<String> propertyKeys, final boolean showTypes) throws JSONException {
         ObjectNode objectNode = createJSONElementAsObjectNode(element, propertyKeys, showTypes);
 
@@ -59,10 +72,20 @@ public final class JSONWriter {
         return jsonObject;
     }
 
+    /**
+     * Creates a Jackson ObjectNode from a graph element. All property keys are serialized and types are not shown.
+     * @param element The graph element to convert to JSON.
+     */
     public static ObjectNode createJSONElementAsObjectNode(final Element element) {
         return createJSONElementAsObjectNode(element, null, false);
     }
 
+    /**
+     * Creates a Jackson ObjectNode from a graph element.
+     * @param element the graph element to convert to JSON.
+     * @param propertyKeys The property keys at the root of the element to serialize.  If null, then all keys are serialized.
+     * @param showTypes Data types are written to the JSON explicitly if true.
+     */
     public static ObjectNode createJSONElementAsObjectNode(final Element element, final List<String> propertyKeys, final boolean showTypes) {
 
         ObjectNode jsonElement = createJSONMap(createPropertyMap(element, propertyKeys), propertyKeys, showTypes);
@@ -90,7 +113,7 @@ public final class JSONWriter {
                 jsonList.add(createJSONList((List) item, propertyKeys, showTypes));
             } else if (item instanceof Map) {
                 jsonList.add(createJSONMap((Map) item, propertyKeys, showTypes));
-            } else if (item.getClass().isArray()) {
+            } else if (item != null && item.getClass().isArray()) {
                 jsonList.add(createJSONList(convertArrayToList(item), propertyKeys, showTypes));
             } else {
                 addObject(jsonList, item);
@@ -103,14 +126,16 @@ public final class JSONWriter {
         final ObjectNode jsonMap = jsonNodeFactory.objectNode();
         for (Object key : map.keySet()) {
             Object value = map.get(key);
-            if (value instanceof List) {
-                value = createJSONList((List) value, propertyKeys, showTypes);
-            } else if (value instanceof Map) {
-                value = createJSONMap((Map) value, propertyKeys, showTypes);
-            } else if (value instanceof Element) {
-                value = createJSONElementAsObjectNode((Element) value, propertyKeys, showTypes);
-            } else if (value.getClass().isArray()) {
-                value = createJSONList(convertArrayToList(value), propertyKeys, showTypes);
+            if (value != null) {
+                if (value instanceof List) {
+                    value = createJSONList((List) value, propertyKeys, showTypes);
+                } else if (value instanceof Map) {
+                    value = createJSONMap((Map) value, propertyKeys, showTypes);
+                } else if (value instanceof Element) {
+                    value = createJSONElementAsObjectNode((Element) value, propertyKeys, showTypes);
+                } else if (value.getClass().isArray()) {
+                    value = createJSONList(convertArrayToList(value), propertyKeys, showTypes);
+                }
             }
 
             putObject(jsonMap, key.toString(), getValue(value, showTypes));
@@ -120,7 +145,9 @@ public final class JSONWriter {
     }
 
     private static void addObject(final ArrayNode jsonList, final Object value) {
-        if (value instanceof Boolean) {
+        if (value == null) {
+            jsonList.add((JsonNode) null);
+        } else if (value instanceof Boolean) {
             jsonList.add((Boolean) value);
         } else if (value instanceof Long) {
             jsonList.add((Long) value);
@@ -142,7 +169,9 @@ public final class JSONWriter {
     }
 
     private static void putObject(final ObjectNode jsonMap, final String key, final Object value) {
-        if (value instanceof Boolean) {
+        if (value == null) {
+            jsonMap.put(key, (JsonNode) null);
+        } else if (value instanceof Boolean) {
             jsonMap.put(key, (Boolean) value);
         } else if (value instanceof Long) {
             jsonMap.put(key, (Long) value);
@@ -283,7 +312,9 @@ public final class JSONWriter {
 
     private static String determineType(final Object value) {
         String type = JSONTokens.TYPE_STRING;
-        if (value instanceof Double) {
+        if (value == null) {
+            type = "unknown";
+        } else if (value instanceof Double) {
             type = JSONTokens.TYPE_DOUBLE;
         } else if (value instanceof Float) {
             type = JSONTokens.TYPE_FLOAT;

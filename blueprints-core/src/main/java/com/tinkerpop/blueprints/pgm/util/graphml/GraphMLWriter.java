@@ -132,7 +132,7 @@ public class GraphMLWriter {
             } else {
                 keyset = vertexKeyTypes.keySet();
             }
-	    
+
             for (String key : keyset) {
                 writer.writeStartElement(GraphMLTokens.KEY);
                 writer.writeAttribute(GraphMLTokens.ID, key);
@@ -149,7 +149,7 @@ public class GraphMLWriter {
             } else {
                 keyset = edgeKeyTypes.keySet();
             }
-	    
+
             for (String key : keyset) {
                 writer.writeStartElement(GraphMLTokens.KEY);
                 writer.writeAttribute(GraphMLTokens.ID, key);
@@ -176,7 +176,7 @@ public class GraphMLWriter {
             for (Vertex vertex : vertices) {
                 writer.writeStartElement(GraphMLTokens.NODE);
                 writer.writeAttribute(GraphMLTokens.ID, getId(vertex));
-		
+
                 Collection<String> keys;
                 if (normalize) {
                     keys = new LinkedList<String>();
@@ -185,7 +185,7 @@ public class GraphMLWriter {
                 } else {
                     keys = vertex.getPropertyKeys();
                 }
-		
+
                 for (String key : keys) {
                     writer.writeStartElement(GraphMLTokens.DATA);
                     writer.writeAttribute(GraphMLTokens.KEY, key);
